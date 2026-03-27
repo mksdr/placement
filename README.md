@@ -3,7 +3,7 @@
 Pure Python 3 / tkinter tool to compare seat allocation strategies while avoiding previous seatmates.
 
 ## Requirements
-- Python 3.x
+- Python 3.8+
 - No third-party libraries required
 
 ## Running

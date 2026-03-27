@@ -21,6 +21,7 @@ BUTTON_SECONDARY = "#6c757d"
 BUTTON_RESET = "#dc3545"
 GRID_COLUMNS = 6
 STUDENT_NAME_TEMPLATE = "Student {}"
+DEFAULT_STUDENT_COUNT = 12
 
 
 logging.basicConfig(
@@ -114,7 +115,7 @@ class BaseAllocator:
 
 class LasVegasAllocator(BaseAllocator):
     name = "Las Vegas"
-    complexity = "Expected O(k*N)"
+    complexity = "Expected O(k*n) (k = max retries)"
 
     def __init__(self, max_retries: int = 2000):
         self.max_retries = max_retries
@@ -135,7 +136,7 @@ class LasVegasAllocator(BaseAllocator):
 
 class ConflictSwappingAllocator(BaseAllocator):
     name = "Conflict-Driven Swapping"
-    complexity = "O(N²)"
+    complexity = "O(n²)"
 
     def __init__(self, max_iterations: int = 3000):
         self.max_iterations = max_iterations
@@ -192,7 +193,7 @@ class ConflictSwappingAllocator(BaseAllocator):
 
 class BacktrackingAllocator(BaseAllocator):
     name = "Backtracking"
-    complexity = "O(N!)"
+    complexity = "O(n!)"
 
     def allocate(self, students: List[str], previous_pairs: Set[frozenset]) -> List[str]:
         logger.debug("Starting Backtracking allocation")
@@ -255,7 +256,7 @@ class SeatAllocationApp:
         self.previous_pairs = self.history_manager.get_previous_pairs()
 
         self.selected_algorithm = tk.StringVar(value="las_vegas")
-        self.student_count_var = tk.StringVar(value="12")
+        self.student_count_var = tk.StringVar(value=str(DEFAULT_STUDENT_COUNT))
 
         self.current_result: Optional[AllocationResult] = None
         self.seat_labels: List[tk.Label] = []
@@ -284,7 +285,7 @@ class SeatAllocationApp:
 
         student_label = tk.Label(
             control_frame,
-            text=f"Students (positive, divisible by {GRID_COLUMNS}):",
+            text=f"Students (must be positive and divisible by {GRID_COLUMNS}):",
             bg=LIGHT_BG,
             anchor="w",
             name="student_count_label",
@@ -478,6 +479,9 @@ class SeatAllocationApp:
         for label in self.seat_labels:
             label.destroy()
         self.seat_labels = []
+
+        if not arrangement:
+            return
 
         rows = math.ceil(len(arrangement) / GRID_COLUMNS)
         for r in range(rows):
