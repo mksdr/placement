@@ -22,6 +22,8 @@ BUTTON_RESET = "#dc3545"
 GRID_COLUMNS = 6
 STUDENT_NAME_TEMPLATE = "Student {}"
 DEFAULT_STUDENT_COUNT = 12
+PAD_NORMAL = 4
+PAD_PAIR_GAP = 16
 
 
 logging.basicConfig(
@@ -285,7 +287,7 @@ class SeatAllocationApp:
 
         student_label = tk.Label(
             control_frame,
-            text=f"Students (must be positive and divisible by {GRID_COLUMNS}):",
+            text="Number of Students:",
             bg=LIGHT_BG,
             anchor="w",
             name="student_count_label",
@@ -298,11 +300,18 @@ class SeatAllocationApp:
             name="student_count_entry",
         )
         self.student_entry.grid(row=2, column=0, sticky="we", pady=(4, 12))
-        student_label.bind("<Button-1>", lambda _: self.student_entry.focus_set())
+        tk.Label(
+            control_frame,
+            text=f"Must be positive and divisible by {GRID_COLUMNS}.",
+            bg=LIGHT_BG,
+            fg="#6c757d",
+            anchor="w",
+            font=("Helvetica", 10),
+        ).grid(row=3, column=0, sticky="w", pady=(0, 12))
 
-        tk.Label(control_frame, text="Algorithm:", bg=LIGHT_BG, anchor="w").grid(row=3, column=0, sticky="w")
+        tk.Label(control_frame, text="Algorithm:", bg=LIGHT_BG, anchor="w").grid(row=4, column=0, sticky="w")
         algo_frame = tk.Frame(control_frame, bg=LIGHT_BG)
-        algo_frame.grid(row=4, column=0, sticky="we", pady=(4, 12))
+        algo_frame.grid(row=5, column=0, sticky="we", pady=(4, 12))
 
         tk.Radiobutton(
             algo_frame,
@@ -338,7 +347,7 @@ class SeatAllocationApp:
             relief="flat",
             padx=10,
             pady=6,
-        ).grid(row=5, column=0, sticky="we", pady=(4, 6))
+        ).grid(row=6, column=0, sticky="we", pady=(4, 6))
 
         tk.Button(
             control_frame,
@@ -349,7 +358,7 @@ class SeatAllocationApp:
             relief="flat",
             padx=10,
             pady=6,
-        ).grid(row=6, column=0, sticky="we", pady=6)
+        ).grid(row=7, column=0, sticky="we", pady=6)
 
         tk.Button(
             control_frame,
@@ -360,7 +369,7 @@ class SeatAllocationApp:
             relief="flat",
             padx=10,
             pady=6,
-        ).grid(row=7, column=0, sticky="we", pady=6)
+        ).grid(row=8, column=0, sticky="we", pady=6)
 
         # Seating grid
         tk.Label(
@@ -459,7 +468,7 @@ class SeatAllocationApp:
         try:
             self.history_manager.append_session(pairs)
             self.previous_pairs = self.history_manager.get_previous_pairs()
-            messagebox.showinfo("Saved", "Allocation saved to history.json.")
+            messagebox.showinfo("Saved", f"Allocation saved to {HISTORY_FILE}.")
             logger.debug("Allocation saved; total sessions now %d", len(self.history_manager.data.get("sessions", [])))
         except Exception as exc:
             logger.exception("Failed to save allocation: %s", exc)
@@ -498,12 +507,12 @@ class SeatAllocationApp:
                     relief="groove",
                     borderwidth=1,
                 )
-                padx = 4
+                padx = PAD_NORMAL
                 if c % 2 == 1 and c != GRID_COLUMNS - 1:
-                    padx = (4, 16)
+                    padx = (PAD_NORMAL, PAD_PAIR_GAP)
                 elif c % 2 == 0 and c != 0:
-                    padx = (16, 4)
-                label.grid(row=r, column=c, padx=padx, pady=4, sticky="nsew")
+                    padx = (PAD_PAIR_GAP, PAD_NORMAL)
+                label.grid(row=r, column=c, padx=padx, pady=PAD_NORMAL, sticky="nsew")
                 self.seat_labels.append(label)
 
         for c in range(GRID_COLUMNS):
