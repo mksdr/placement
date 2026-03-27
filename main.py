@@ -1,5 +1,6 @@
 import json
 import logging
+import math
 import random
 import time
 from dataclasses import dataclass
@@ -18,6 +19,8 @@ PAIR_BORDER = "#dee2e6"
 BUTTON_PRIMARY = "#0d6efd"
 BUTTON_SECONDARY = "#6c757d"
 BUTTON_RESET = "#dc3545"
+GRID_COLUMNS = 6
+STUDENT_NAME_TEMPLATE = "Student {}"
 
 
 logging.basicConfig(
@@ -111,7 +114,7 @@ class BaseAllocator:
 
 class LasVegasAllocator(BaseAllocator):
     name = "Las Vegas"
-    complexity = "Expected O(k·N)"
+    complexity = "Expected O(k*N)"
 
     def __init__(self, max_retries: int = 2000):
         self.max_retries = max_retries
@@ -279,12 +282,22 @@ class SeatAllocationApp:
             row=0, column=0, sticky="w", pady=(0, 16)
         )
 
-        tk.Label(control_frame, text="Number of Students (multiple of 6):", bg=LIGHT_BG, anchor="w").grid(
-            row=1, column=0, sticky="w"
+        student_label = tk.Label(
+            control_frame,
+            text=f"Students (positive, divisible by {GRID_COLUMNS}):",
+            bg=LIGHT_BG,
+            anchor="w",
+            name="student_count_label",
         )
-        tk.Entry(control_frame, textvariable=self.student_count_var, width=20).grid(
-            row=2, column=0, sticky="we", pady=(4, 12)
+        student_label.grid(row=1, column=0, sticky="w")
+        self.student_entry = tk.Entry(
+            control_frame,
+            textvariable=self.student_count_var,
+            width=20,
+            name="student_count_entry",
         )
+        self.student_entry.grid(row=2, column=0, sticky="we", pady=(4, 12))
+        student_label.bind("<Button-1>", lambda _: self.student_entry.focus_set())
 
         tk.Label(control_frame, text="Algorithm:", bg=LIGHT_BG, anchor="w").grid(row=3, column=0, sticky="w")
         algo_frame = tk.Frame(control_frame, bg=LIGHT_BG)
@@ -349,7 +362,12 @@ class SeatAllocationApp:
         ).grid(row=7, column=0, sticky="we", pady=6)
 
         # Seating grid
-        tk.Label(seating_frame, text="Seating Chart (6 columns, paired seats)", bg=LIGHT_BG, font=("Helvetica", 14, "bold")).pack(
+        tk.Label(
+            seating_frame,
+            text=f"Seating Chart ({GRID_COLUMNS} columns, paired seats)",
+            bg=LIGHT_BG,
+            font=("Helvetica", 14, "bold"),
+        ).pack(
             anchor="w", pady=(0, 12)
         )
         self.grid_container = tk.Frame(seating_frame, bg=LIGHT_BG)
@@ -380,10 +398,17 @@ class SeatAllocationApp:
             messagebox.showerror("Invalid Input", "Please enter a valid integer for the number of students.")
             logger.error("Student count is not an integer")
             raise
-        if count <= 0 or count % 6 != 0:
-            messagebox.showerror("Invalid Input", "Number of students must be a positive multiple of 6.")
-            logger.error("Student count %d is not a positive multiple of 6", count)
-            raise ValueError("Invalid student count")
+        if count <= 0:
+            messagebox.showerror("Invalid Input", "Number of students must be greater than zero.")
+            logger.error("Student count %d is not positive", count)
+            raise ValueError("Invalid student count (non-positive)")
+        if count % GRID_COLUMNS != 0:
+            messagebox.showerror(
+                "Invalid Input",
+                f"Number of students must be divisible by {GRID_COLUMNS} to fill pairs across {GRID_COLUMNS} columns.",
+            )
+            logger.error("Student count %d is not divisible by %d", count, GRID_COLUMNS)
+            raise ValueError("Invalid student count (divisibility)")
         return count
 
     def start_allocation(self) -> None:
@@ -393,7 +418,7 @@ class SeatAllocationApp:
         except Exception:
             return
 
-        students = [f"Student {i+1}" for i in range(student_count)]
+        students = [STUDENT_NAME_TEMPLATE.format(i + 1) for i in range(student_count)]
         algo_key = self.selected_algorithm.get()
         allocator = ALLOCATORS.get(algo_key)
         if allocator is None:
@@ -454,10 +479,10 @@ class SeatAllocationApp:
             label.destroy()
         self.seat_labels = []
 
-        rows = (len(arrangement) + 5) // 6
+        rows = math.ceil(len(arrangement) / GRID_COLUMNS)
         for r in range(rows):
-            for c in range(6):
-                idx = r * 6 + c
+            for c in range(GRID_COLUMNS):
+                idx = r * GRID_COLUMNS + c
                 text = arrangement[idx] if idx < len(arrangement) else ""
                 bg_color = HIGHLIGHT_BG if text else LIGHT_BG
                 label = tk.Label(
@@ -470,14 +495,14 @@ class SeatAllocationApp:
                     borderwidth=1,
                 )
                 padx = 4
-                if c in (1, 3):
+                if c % 2 == 1 and c != GRID_COLUMNS - 1:
                     padx = (4, 16)
-                elif c in (2, 4):
+                elif c % 2 == 0 and c != 0:
                     padx = (16, 4)
                 label.grid(row=r, column=c, padx=padx, pady=4, sticky="nsew")
                 self.seat_labels.append(label)
 
-        for c in range(6):
+        for c in range(GRID_COLUMNS):
             self.grid_container.columnconfigure(c, weight=1)
         for r in range(rows):
             self.grid_container.rowconfigure(r, weight=1)
